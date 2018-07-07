@@ -1,0 +1,33 @@
+{
+  "name": "service-tevor",
+  "version": "1.0.0",
+  "description": "Tevor backend service",
+  "main": "app.js",
+  "dependencies": {
+    "big.js": "^5.1.2",
+    "body-parser": "^1.18.3",
+    "express": "^4.16.3",
+    "mongoose": "^5.2.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.7.0",
+    "nodemon": "^1.17.5"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon js/app.js --exec babel-node",
+    "build": "babel js -d dist",
+    "server": "node dist/app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hm-yap/service-tevor.git"
+  },
+  "author": "Hao Meng Yap",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/hm-yap/service-tevor/issues"
+  },
+  "homepage": "https://github.com/hm-yap/service-tevor#readme"
+}
