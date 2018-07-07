@@ -6,19 +6,27 @@
   "dependencies": {
     "big.js": "^5.1.2",
     "body-parser": "^1.18.3",
+    "cors": "^2.8.4",
     "express": "^4.16.3",
     "mongoose": "^5.2.1"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-preset-env": "^1.7.0",
+    "eslint": "^5.0.1",
+    "eslint-config-standard": "^11.0.0",
+    "eslint-plugin-import": "^2.13.0",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-promise": "^3.8.0",
+    "eslint-plugin-standard": "^3.1.0",
     "nodemon": "^1.17.5"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon js/app.js --exec babel-node",
-    "build": "babel js -d dist",
-    "server": "node dist/app.js"
+    "dev": "nodemon src/app.js --exec babel-node",
+    "build": "babel src -d dist",
+    "start": "node dist/app.js",
+    "lint": "eslint src/**"
   },
   "repository": {
     "type": "git",
