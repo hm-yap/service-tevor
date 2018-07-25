@@ -9,7 +9,7 @@
  *   model: phone model for this job, e.g. 'IPHONE 4', referred from 'Phone'
  *   parts: list of spare parts used in this repair job, referred from 'Stock'
  *   problems: list of problems discovered / fixed for this job
- *   status: current status of the job, 'ASSIGNED|FIXING|CANCELLED|RETURNED|DONE|BILLED'
+ *   status: current status of the job, 'CREATED|ASSIGNED|FIXING|RETURNED|DONE|APPROVED|BILLED|REWORKED'
  *   asignee: employee working on the job, user id from 'User'
  *   createdAt: timestamp when this data is created. automatically handled by Mongoose
  *   updatedAt: timestamp when this data was last updated. automatically handled by Mongoose
