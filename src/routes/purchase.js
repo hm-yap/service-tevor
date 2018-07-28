@@ -1,15 +1,15 @@
 import { Router } from 'express'
 
-const stockRouter = Router()
+const purchaseRouter = Router()
 
-stockRouter.get('/', (req, res) => {
+purchaseRouter.get('/', (req, res) => {
   res.json({
     method: 'GET',
     result: 'Return everything (TBD)'
   })
 })
 
-stockRouter.get('/:id', (req, res) => {
+purchaseRouter.get('/:id', (req, res) => {
   res.json({
     method: 'GET',
     query: `Query String ${req.query.active}`,
@@ -17,25 +17,25 @@ stockRouter.get('/:id', (req, res) => {
   })
 })
 
-stockRouter.post('/', (req, res) => {
+purchaseRouter.post('/', (req, res) => {
   res.json({
     method: 'POST',
     result: 'test'
   })
 })
 
-stockRouter.put('/:id', (req, res) => {
+purchaseRouter.put('/:id', (req, res) => {
   res.json({
     method: 'PUT',
     result: `Putting ${req.params.id}`
   })
 })
 
-stockRouter.delete('/:id', (req, res) => {
+purchaseRouter.delete('/:id', (req, res) => {
   res.json({
     method: 'DELETE',
     result: `Deleting ${req.params.id}`
   })
 })
 
-export default stockRouter
+export default purchaseRouter
