@@ -1,12 +1,10 @@
 import { Router } from 'express'
+import jobController from '../controllers/JobController'
 
 const jobRouter = Router()
 
 jobRouter.get('/', (req, res) => {
-  res.json({
-    method: 'GET',
-    result: 'Return everything (TBD)'
-  })
+  jobController.getAll(req, res)
 })
 
 jobRouter.get('/:id', (req, res) => {

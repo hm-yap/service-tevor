@@ -9,7 +9,7 @@
  *   model: phone model for this job, e.g. 'IPHONE 4', referred from 'Phone'
  *   parts: list of spare parts used in this repair job, referred from 'Stock'
  *   problems: list of problems discovered / fixed for this job
- *   status: current status of the job, 'CREATED|ASSIGNED|FIXING|RETURNED|DONE|APPROVED|BILLED|REWORKED'
+ *   status: current status of the job, 'NEW|ASSIGNED|FIXING|RETURNED|DONE|APPROVED|BILLED|REWORKED'
  *   asignee: employee working on the job, user id from 'User'
  *   createdAt: timestamp when this data is created. automatically handled by Mongoose
  *   updatedAt: timestamp when this data was last updated. automatically handled by Mongoose
@@ -17,7 +17,7 @@
  *   dateOut: date when this job is completed and deliver to client. defaults to time when job is marked 'DONE'
  * }
  */
-import { Schema } from 'mongoose'
+import { Schema, model } from 'mongoose'
 
 const jobSchema = new Schema({
   jobid: String,
@@ -38,4 +38,6 @@ const jobSchema = new Schema({
   dateOut: Date
 }, { timestamps: true })
 
-export default jobSchema
+const jobModel = model('Job', jobSchema)
+
+export default jobModel
