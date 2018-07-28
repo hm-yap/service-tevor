@@ -16,10 +16,7 @@ jobRouter.get('/:id', (req, res) => {
 })
 
 jobRouter.post('/', (req, res) => {
-  res.json({
-    method: 'POST',
-    result: 'test'
-  })
+  jobController.createJob(req, res)
 })
 
 jobRouter.put('/:id', (req, res) => {

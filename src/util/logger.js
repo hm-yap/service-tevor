@@ -1,7 +1,9 @@
 import fs from 'fs'
 import { transports, createLogger, format } from 'winston'
+// Config
+import logConfig from '../config'
 
-const logDir = './logs'
+const { logDir, logFile } = logConfig
 
 if (!fs.existsSync(logDir)) {
   fs.mkdirSync(logDir)
@@ -17,7 +19,7 @@ const logger = createLogger({
       colorize: true
     }),
     new transports.File({
-      filename: `${logDir}/app.log`,
+      filename: `${logDir}/${logFile}`,
       maxsize: 20971520, // 20MB
       maxFiles: 25,
       tailable: true

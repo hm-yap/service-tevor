@@ -17,9 +17,9 @@
  *   dateOut: date when this job is completed and deliver to client. defaults to time when job is marked 'DONE'
  * }
  */
-import { Schema, model } from 'mongoose'
+import Mongoose from 'mongoose'
 
-const jobSchema = new Schema({
+const jobSchema = new Mongoose.Schema({
   jobid: String,
   client: String,
   imei: String,
@@ -38,6 +38,6 @@ const jobSchema = new Schema({
   dateOut: Date
 }, { timestamps: true })
 
-const jobModel = model('Job', jobSchema)
+const jobModel = Mongoose.model('Job', jobSchema)
 
 export default jobModel
