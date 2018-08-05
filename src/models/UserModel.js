@@ -21,7 +21,8 @@ const userSchema = new Mongoose.Schema({
   name: { type: String, required: true },
   shortname: { type: String, required: true },
   roles: [],
-  cert: String,
+  cert: { type: String, unique: true },
+  deleted: { type: Boolean, default: false },
   createdBy: { type: String, required: true },
   modifiedBy: { type: String, required: true }
 }, { timestamps: true })

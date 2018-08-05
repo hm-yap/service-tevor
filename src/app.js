@@ -4,7 +4,7 @@ import bodyParser from 'body-parser'
 // Utils
 import connectToDb from './util/db'
 import logger from './util/logger'
-import { validator } from './util/requestValidator'
+import auth from './util/auth'
 // Routes
 import invoice from './routes/invoice'
 import job from './routes/job'
@@ -27,13 +27,13 @@ app.use(cors())
 app.use(bodyParser.json())
 
 // Express routes
-app.use('/invoice', validator, invoice)
-app.use('/job', validator, job)
-app.use('/customer', validator, customer)
-app.use('/purchase', validator, purchase)
-app.use('/stock', validator, stock)
-app.use('/supplier', validator, supplier)
-app.use('/user', validator, user)
+app.use('/invoice', auth, invoice)
+app.use('/job', auth, job)
+app.use('/customer', auth, customer)
+app.use('/purchase', auth, purchase)
+app.use('/stock', auth, stock)
+app.use('/supplier', auth, supplier)
+app.use('/user', auth, user)
 
 app.listen(port, '127.0.0.1', () => logger.info(`Tevor Service started on port ${port}`))
 

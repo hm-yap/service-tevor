@@ -1,5 +1,7 @@
+// Models
+import JobModel from '../models/JobModel'
+// Utils
 import logger from '../util/logger'
-import jobModel from '../models/JobModel'
 
 const controller = {}
 
@@ -16,7 +18,10 @@ controller.getAll = async (req, res) => {
     * 5. Paginated response (TBD)
     */
   try {
-    const allJobs = await jobModel.find()
+    const { user } = req
+    const { shortname } = user
+    logger.info(`Retrieving all jobs for user: ${shortname}`)
+    const allJobs = await JobModel.find()
     res.send(allJobs)
   } catch (err) {
     logger.error('error occured')
@@ -53,7 +58,7 @@ controller.createJob = async (req, res) => {
 
   const data = req.body
   try {
-    const newJob = jobModel(data)
+    const newJob = JobModel(data)
     const result = await newJob.save()
     logger.info('Inserting new job...')
     logger.info(newJob)
