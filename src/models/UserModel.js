@@ -7,7 +7,7 @@
  *   name: full name of the user
  *   shortname: nick name of the user
  *   roles: list of roles of the user
- *   certs: list of client certificates cn provisioned to the user for MTLS authentication
+ *   cert: client certificates cn provisioned to the user for MTLS authentication
  *   createdBy: user id who created this request
  *   modifiedBy: last user who modified this request
  *   createdAt: timestamp when this data is created. automatically handled by Mongoose
@@ -17,7 +17,13 @@
 import Mongoose from 'mongoose'
 
 const userSchema = new Mongoose.Schema({
-
+  userid: { type: String, unique: true, required: true },
+  name: { type: String, required: true },
+  shortname: { type: String, required: true },
+  roles: [],
+  cert: String,
+  createdBy: { type: String, required: true },
+  modifiedBy: { type: String, required: true }
 }, { timestamps: true })
 
 const userModel = Mongoose.model('User', userSchema)
