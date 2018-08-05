@@ -7,6 +7,8 @@
  *   name: full name of the supplier
  *   shortname: nick name of the supplier
  *   contact: contact number of the supplier
+ *   createdBy: user id who created this request
+ *   modifiedBy: last user who modified this request
  *   createdAt: timestamp when this data is created. automatically handled by Mongoose
  *   updatedAt: timestamp when this data was last updated. automatically handled by Mongoose
  * }

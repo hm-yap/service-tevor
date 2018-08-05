@@ -10,8 +10,10 @@
  *         stockDesc: stockDesc for this item, referred from 'Stock'
  *         unitPrice: unit price during purchase
  *         qty: quantity of items ordered
- *   delivered: whether the ordered items fully delivered
+ *         delivered: whether the ordered items fully delivered
  *   supplier: Supplied by which supplier, id taken from 'Supplier'
+ *   createdBy: user id who created this request
+ *   modifiedBy: last user who modified this request
  *   createdAt: timestamp when this data is created. automatically handled by Mongoose
  *   updatedAt: timestamp when this data was last updated. automatically handled by Mongoose
  * }

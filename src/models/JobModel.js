@@ -18,6 +18,8 @@
  *   dateIn: date when this job is retrieved from client site. defaults to createdAt
  *   dateOut: date when this job is completed and deliver to client. defaults to time when job is marked 'DONE'
  *   deleted: whether this record is deleted
+ *   createdBy: user id who created this request
+ *   modifiedBy: last user who modified this request
  *   createdAt: timestamp when this data is created. automatically handled by Mongoose
  *   updatedAt: timestamp when this data was last updated. automatically handled by Mongoose
  * }
@@ -48,7 +50,9 @@ const jobSchema = new Mongoose.Schema({
   assignee: String,
   dateIn: { type: Date, default: Date.now },
   dateOut: Date,
-  deleted: { type: Boolean, default: false }
+  deleted: { type: Boolean, default: false },
+  createdBy: { type: String, required: true },
+  modifiedBy: { type: String, required: true }
 }, { timestamps: true })
 
 const jobModel = Mongoose.model('Job', jobSchema)

@@ -8,6 +8,8 @@
  *   shortname: nick name of the user
  *   roles: list of roles of the user
  *   certs: list of client certificates provisioned to the user for MTLS authentication
+ *   createdBy: user id who created this request
+ *   modifiedBy: last user who modified this request
  *   createdAt: timestamp when this data is created. automatically handled by Mongoose
  *   updatedAt: timestamp when this data was last updated. automatically handled by Mongoose
  * }
