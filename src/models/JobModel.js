@@ -39,7 +39,10 @@ const jobSchema = new Mongoose.Schema({
     stockDesc: String,
     qty: { type: Number, min: [0, 'Parts quantity cannot be less than 0'] }
   }],
-  problems: [String],
+  problems: [{
+    probid: String,
+    probDesc: String
+  }],
   status: {
     type: String,
     enum: ['NEW', 'ASSIGNED', 'FIXING', 'CANCELLED', 'DONE', 'BILLED', 'REWORK'],

@@ -32,7 +32,7 @@ controller.getOne = async (req, res) => {
     * Get one job logic stub
     * 1. Check caller id (TBD)
     * 2. Check caller roles (TBD)
-    * 3. If not admin - check if user is assignee
+    * 3. If not job admin - check if user = assignee
     *    i. if neither, HTTP 401
     * 4. Structure response output with status codes (TBD)
     */
@@ -96,7 +96,8 @@ controller.addProblems = async (req, res) => {
    * 3. check job ID - [1. + 1i.] put to common job util function
    *    i. If not found - HTTP 404
    * 4. 'whitelist' the allowed fields from request payload. Take only whitelisted fields (TBD)
-   * 5. Structure response output with status codes (TBD)
+   * 5. Generate unique problem id
+   * 6. Structure response output with status codes (TBD)
    */
 }
 
@@ -155,7 +156,7 @@ controller.addParts = async (req, res) => {
    * 5. 'whitelist' the allowed fields from request payload. Take only whitelisted fields (TBD)
    *    i.   each item qty must be greater than 0
    *    ii.  If payload not valid - HTTP 400
-   * 6. Do Part request flow:
+   * 6. Do Part request flow / stock integration:
    *    6.1 check stock quantity
    *        i.   if requested quantity is higher than remaining balance
    *             AND poid not provided
@@ -167,27 +168,9 @@ controller.addParts = async (req, res) => {
    *             6.1.ii.1 Insert into PartRequest - poid = input poid
    *             6.1.ii.2 Update PurchaseOrder where poid = input poid, claimQty = claimQty + [qty]
    *        iii. if poid provided does not exist or poid stock balance is insufficient
-   *             HTTP 400
-   * 6. Structure response output with status codes (TBD)
-   */
-}
-
-/**
- * PUT /job/:id/part/:id
- */
-controller.updatePart = async (req, res) => {
-  /**
-   * Update job problem logic stub
-   * 1. check caller id (TBD)
-   * 2. check user permission (TBD)
-   *    i.   Restricted to job admin / assignee only
-   *    ii.  No permission - HTTP 401
-   * 3. check job ID
-   *    i. If not found - HTTP 404
-   * 4. check problem ID
-   *    i. If not found - HTTP 404
-   * 5. 'whitelist' the allowed fields from request payload. Take only whitelisted fields (TBD)
-   * 6. Structure response output with status codes (TBD)
+   *             return HTTP 400
+   * 7. Update job, inserts the requested parts into parts: [] object array
+   * 8. Structure response output with status codes (TBD)
    */
 }
 
@@ -196,17 +179,21 @@ controller.updatePart = async (req, res) => {
  */
 controller.deletePart = async (req, res) => {
   /**
-   * Update job logic stub
-   * 1. check job ID
+   * Delete job part logic stub
+   * 1. check caller id (TBD)
+   * 2. check user permission (TBD)
+   *    i.   restricted to assignee & job admin only
+   *    ii.  No permission - HTTP 401
+   * 3. check job ID
    *    i. If not found - HTTP 404
-   * 2. check caller id (TBD)
-   * 3. check user permission (TBD)
-   *    i.   job admin only - approved, assignee
-   *    ii.  user admin only - credited (TBD)
-   *    iii. other fields - job admin or assignee only
-   *    iv.  No permission - HTTP 401
-   * 4. 'whitelist' the allowed fields from request payload. Take only whitelisted fields (TBD)
-   * 5. Structure response output with status codes (TBD)
+   * 4. check job part ID
+   *    i. If not found - HTTP 404
+   * 5. 'whitelist' the allowed fields from request payload. Take only whitelisted fields (TBD)
+   * 6. Do Part request flow / stock integration:
+   *    i. Update from PartRequest where stockid = [stockid] and jobid = [jobid]
+   *       SET status to 'CANCELLED'
+   * 7. Remove the part from parts array
+   * 8. Structure response output with status codes (TBD)
    */
 }
 

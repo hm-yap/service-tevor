@@ -5,10 +5,13 @@
  *
  * {
  *   prqid: part request id, system generated unique id (short id, 10 char, PQ-XXXXXXXXXX)
+ *   jobid: request came from which jobid
  *   stockid: stock id of the requested stock
+ *   poid: this request was fulfilled by which poid
  *   shortName: custom short name from user
  *   stockDesc: Long name of the part requested
  *   reqQty: requested quantity
+ *   status: status of the request: 'REQUESTED|CANCELLED|ORDERED|DELIVERED|RETURNED'
  *   createdBy: user id who created this request
  *   modifiedBy: last user who modified this request
  *   createdAt: timestamp when this data is created. automatically handled by Mongoose
