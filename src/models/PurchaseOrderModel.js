@@ -10,6 +10,7 @@
  *         stockDesc: stockDesc for this item, referred from 'Stock'
  *         unitPrice: unit price during purchase
  *         qty: quantity of items ordered
+ *         usedQty: quantity of items used by job
  *         delivered: whether the ordered items fully delivered
  *   supplier: Supplied by which supplier, id taken from 'Supplier'
  *   createdBy: user id who created this request
