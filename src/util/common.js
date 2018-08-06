@@ -10,3 +10,14 @@ export const nextId = async (id = '', prefix = '', padLength = 8) => {
 
   return `${prefix}-${nextId.padStart(padLength, '0')}`
 }
+
+export const delEmpValue = (obj) => {
+  if (typeof obj === 'object') {
+    Object
+      .keys(obj)
+      .filter(key => obj[key] === undefined)
+      .forEach(empty => delete obj[empty])
+  }
+
+  return obj
+}

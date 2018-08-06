@@ -1,54 +1,69 @@
 import { Router } from 'express'
+// Controllers
 import userController from '../controllers/UserController'
+// Utils
+import { requireAdmin } from '../util/auth'
 
 const userRouter = Router()
 
+/**
+ * GET /user
+ * Retrieve user profile
+ */
 userRouter.get('/', (req, res) => {
   userController.getProfile(req, res)
 })
 
-userRouter.get('/all', (req, res) => {
-  res.json({
-    method: 'GET',
-    result: 'Return everything (TBD)'
-  })
-})
-
-userRouter.get('/:id', (req, res) => {
-  res.json({
-    method: 'GET',
-    query: `Query String ${req.query.active}`,
-    result: `GET ${req.params.id}`
-  })
-})
-
-userRouter.post('/', (req, res) => {
-  userController.createUser(req, res)
-})
-
-userRouter.put('/', (req, res) => {
+/**
+ * PATCH /user
+ * Update of user profile
+ * Only limited field can be updated
+ */
+userRouter.patch('/', (req, res) => {
   userController.updateProfile(req, res)
 })
 
-userRouter.put('/:id/role', (req, res) => {
-  res.json({
-    method: 'PUT',
-    result: `Putting ${req.params.id}`
-  })
+/** User Admin Only routes */
+/**
+ * GET /user/all
+ * Retrieve all users
+ */
+userRouter.get('/all', requireAdmin('user'), (req, res) => {
+  userController.getAll(req, res)
 })
 
-userRouter.put('/:id/cert', (req, res) => {
-  res.json({
-    method: 'PUT',
-    result: `Putting ${req.params.id}`
-  })
+/**
+ * GET /user/:id
+ * Retrieve user with given id
+ */
+userRouter.get('/:id', requireAdmin('user'), (req, res) => {
+  userController.getOne(req, res)
 })
 
-userRouter.delete('/:id', (req, res) => {
-  res.json({
-    method: 'DELETE',
-    result: `Deleting ${req.params.id}`
-  })
+/**
+ * POST /user
+ * Creates a new user
+ */
+userRouter.post('/', requireAdmin('user'), (req, res) => {
+  userController.createUser(req, res)
 })
+
+/**
+ * PUT /user/:id
+ * Update user details
+ * All fields can be updated
+ */
+userRouter.put('/:id', requireAdmin('user'), (req, res) => {
+  userController.updateUser(req, res)
+})
+
+/**
+ * DELETE /user/:id
+ * Mark user as deleted
+ */
+userRouter.delete('/:id', requireAdmin('user'), (req, res) => {
+  userController.deleteUser(req, res)
+})
+/** User Admin Only routes END */
 
 export default userRouter
