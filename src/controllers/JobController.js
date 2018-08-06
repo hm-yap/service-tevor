@@ -2,6 +2,12 @@
 import JobModel from '../models/JobModel'
 // Utils
 import logger from '../util/logger'
+import { nextId, delEmpValue } from '../util/common'
+// Job module related constants
+const JOBID = 'jobid'
+const JOBPFX = 'JOB'
+const JOBPAD = 4
+const EXCLUDE_FIELDS = '-deleted -_id -__v'
 
 const controller = {}
 
