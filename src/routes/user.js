@@ -23,17 +23,11 @@ userRouter.get('/:id', (req, res) => {
 })
 
 userRouter.post('/', (req, res) => {
-  res.json({
-    method: 'POST',
-    result: 'test'
-  })
+  userController.createUser(req, res)
 })
 
 userRouter.put('/', (req, res) => {
-  res.json({
-    method: 'PUT',
-    result: `Putting ${req.params.id}`
-  })
+  userController.updateProfile(req, res)
 })
 
 userRouter.put('/:id/role', (req, res) => {

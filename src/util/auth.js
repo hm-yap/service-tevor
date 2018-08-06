@@ -10,7 +10,7 @@ const auth = async (req, res, next) => {
   if (!user) {
     return res.status(401).json(unauthorized)
   } else {
-    req.user = user
+    res.locals.user = user
     next()
   }
 }

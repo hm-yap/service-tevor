@@ -3,7 +3,7 @@
  * Store user identity, roles
  *
  * {
- *   userid: user id, system generated unique id (short id, 6 char, UR-XXXXXXXXXX)
+ *   userid: user id, system generated unique id (short id, 4 char, USR-XXXX)
  *   name: full name of the user
  *   shortname: nick name of the user
  *   roles: list of roles of the user
@@ -20,8 +20,21 @@ const userSchema = new Mongoose.Schema({
   userid: { type: String, unique: true, required: true },
   name: { type: String, required: true },
   shortname: { type: String, required: true },
-  roles: [],
-  cert: { type: String, unique: true },
+  roles: {
+    job: {
+      type: String,
+      enum: ['USER', 'ADMIN']
+    },
+    stock: {
+      type: String,
+      enum: ['USER', 'ADMIN']
+    },
+    user: {
+      type: String,
+      enum: ['USER', 'ADMIN']
+    }
+  },
+  cert: { type: String, required: true },
   deleted: { type: Boolean, default: false },
   createdBy: { type: String, required: true },
   modifiedBy: { type: String, required: true }
