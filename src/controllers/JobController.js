@@ -1,12 +1,15 @@
+import { generate } from 'shortid'
 // Models
 import JobModel from '../models/JobModel'
 // Utils
 import logger from '../util/logger'
 import { nextId, delEmpValue } from '../util/common'
+import { isAdmin } from '../util/auth';
 // Job module related constants
+const JOB_MODULE = 'job'
 const JOBID = 'jobid'
 const JOBPFX = 'JOB'
-const JOBPAD = 4
+const JOBPAD = 8
 const EXCLUDE_FIELDS = '-deleted -_id -__v'
 
 const controller = {}
@@ -24,14 +27,19 @@ controller.getAll = async (req, res) => {
     * 5. Paginated response (TBD)
     */
   try {
-    const { user } = req
-    const { shortname } = user
-    logger.info(`Retrieving all jobs for user: ${shortname}`)
-    const allJobs = await JobModel.find()
-    res.send(allJobs)
+    const { user = {} } = res.locals
+    const { userid: curUsrId } = user
+    let findQuery = {}
+
+    if (isAdmin(user, JOB_MODULE) === false) {
+      findQuery = Object.assign(findQuery, { assignee: curUsrId })
+    }
+
+    const allJobs = await JobModel.find(findQuery)
+    res.status(200).json({ result: allJobs })
   } catch (err) {
-    logger.error('error occured')
-    res.send('error occurred')
+    logger.error(`${JOBPFX}.getAll: ${err}`)
+    res.status(500).json({ error: 'Internal server error' })
   }
 }
 
@@ -44,9 +52,29 @@ controller.getOne = async (req, res) => {
     * 1. Check caller id (TBD)
     * 2. Check caller roles (TBD)
     * 3. If not job admin - check if user = assignee
-    *    i. if neither, HTTP 401
+    *    i. if neither, HTTP 404
     * 4. Structure response output with status codes (TBD)
     */
+  try {
+    const { user = {} } = res.locals
+    const { userid: curUsrId } = user
+    let findQuery = { jobid: req.params.id }
+
+    if (isAdmin(user, JOB_MODULE) === false) {
+      findQuery = Object.assign(findQuery, { assignee: curUsrId })
+    }
+
+    const job = await JobModel.findOne(findQuery)
+
+    if (!job) {
+      res.status(404).json({ error: 'Job not found' })
+    } else {
+      res.status(200).json({ result: job })
+    }
+  } catch (err) {
+    logger.error(`${JOBPFX}.getOne: ${err}`)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 }
 
 /**
@@ -61,17 +89,47 @@ controller.createJob = async (req, res) => {
     * 3. If required fields not found, return HTTP 400 (TBD)
     * 4. Structure response output with status codes (TBD)
     */
-
-  const data = req.body
   try {
-    const newJob = JobModel(data)
-    const result = await newJob.save()
-    logger.info('Inserting new job...')
-    logger.info(newJob)
-    res.send(`success: ${result}`)
+    const { user: { userid: curUsrId } } = res.locals
+
+    const {
+      client: inputClient = '',
+      imei: inputImei = '',
+      jobno: inputJobno = '',
+      brand: inputBrand = '',
+      model: inputModel = '',
+      status: inputStatus = '',
+      assignee: inputAssignee = ''
+    } = req.body
+
+    if (inputClient === '' || inputBrand === '' || inputModel === '') {
+      return res.status(400).json({ error: 'Customer ID, phone brand or model cannot be blank' })
+    }
+
+    const newJobId = await nextId(JOBID, JOBPFX, JOBPAD)
+    const newJob = new JobModel({
+      jobid: newJobId,
+      client: inputClient,
+      imei: inputImei,
+      jobno: inputJobno,
+      brand: inputBrand,
+      model: inputModel,
+      status: inputStatus,
+      assignee: inputAssignee,
+      createdBy: curUsrId,
+      modifiedBy: curUsrId
+    })
+    const saveResult = await newJob.save()
+    const { jobid: savedJobid } = saveResult
+
+    res.status(200).json({
+      result: {
+        jobid: savedJobid
+      }
+    })
   } catch (err) {
-    logger.error(`Error during save: ${err}`)
-    res.send('Error occurred during save')
+    logger.error(`${JOBPFX}.createJob: ${err}`)
+    res.status(500).json({ error: 'Internal server error' })
   }
 }
 
@@ -113,7 +171,7 @@ controller.addProblems = async (req, res) => {
 }
 
 /**
- * PUT /job/:id/problem/:id
+ * PUT /job/:id/problem/:probid
  */
 controller.updateProblem = async (req, res) => {
   /**
@@ -132,7 +190,7 @@ controller.updateProblem = async (req, res) => {
 }
 
 /**
- * DELETE /job/:id/problem/:id
+ * DELETE /job/:id/problem/:probid
  */
 controller.deleteProblem = async (req, res) => {
   /**
@@ -186,7 +244,7 @@ controller.addParts = async (req, res) => {
 }
 
 /**
- * DELETE /job/:id/part/:id
+ * DELETE /job/:id/part/:partid
  */
 controller.deletePart = async (req, res) => {
   /**

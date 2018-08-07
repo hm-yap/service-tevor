@@ -3,6 +3,9 @@ import { findUserByCert } from '../controllers/UserController'
 const userHeader = 'x-tevor-cn'
 const noAuthError = { error: 'Fail to authenticate user' }
 
+/**
+ * Simple middleware to authenticate users
+ */
 const auth = async (req, res, next) => {
   const userCn = req.header(userHeader) || ''
   const user = await findUserByCert(userCn)
@@ -16,6 +19,9 @@ const auth = async (req, res, next) => {
   }
 }
 
+/**
+ * Custom middleware to enforce route to be restricted to module admins only
+ */
 export const requireAdmin = (module = '') => {
   return (req, res, next) => {
     const { user = {}, isAuthenticated = false } = res.locals
@@ -27,6 +33,18 @@ export const requireAdmin = (module = '') => {
       res.status(403).json({ error: `${shortname} do not have permission to access this endpoint` })
     }
   }
+}
+
+/**
+ * Checks whether a given user is ADMIN for a given module
+ */
+export const isAdmin = (user = {}, module = '') => {
+  const { roles = {} } = user
+
+  if (roles[module] === 'ADMIN') {
+    return true
+  }
+  return false
 }
 
 export default auth

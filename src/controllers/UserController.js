@@ -2,7 +2,7 @@
 import UserModel from '../models/UserModel'
 // Utils
 import logger from '../util/logger'
-import { nextId, delEmpValue } from '../util/common'
+import { nextId, delEmpObjValue } from '../util/common'
 // User module related constants
 let userCache = []
 const USRID = 'userid'
@@ -102,7 +102,7 @@ controller.getProfile = async (req, res) => {
 
     const resultObj = Object.assign(userObj, { createdBy: creatorSN, modifiedBy: updaterSN })
 
-    res.json({ result: resultObj })
+    res.status(200).json({ result: resultObj })
   } catch (err) {
     logger.error(`${USRPFX}.getProfile: ${err}`)
     res.status(500).json({ error: 'Internal server error' })
@@ -250,7 +250,7 @@ controller.updateUser = async (req, res) => {
       modifiedBy: curUsrId
     }
 
-    const validUpdateFields = delEmpValue(updateFields)
+    const validUpdateFields = delEmpObjValue(updateFields)
 
     const updatedUser = await UserModel.findOneAndUpdate(
       { userid: updUsrId, deleted: false },

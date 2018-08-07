@@ -29,12 +29,12 @@ import Mongoose from 'mongoose'
 const jobSchema = new Mongoose.Schema({
   jobid: { type: String, unique: true, required: true },
   client: { type: String, required: true },
-  imei: { type: String, required: true },
-  jobno: { type: String, required: true },
+  imei: { type: String, default: '' },
+  jobno: { type: String, default: '' },
   brand: { type: String, required: true },
   model: { type: String, required: true },
   parts: [{
-    itemid: String,
+    partid: String,
     stockid: String,
     stockDesc: String,
     qty: { type: Number, min: [0, 'Parts quantity cannot be less than 0'] }
@@ -45,15 +45,17 @@ const jobSchema = new Mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['NEW', 'ASSIGNED', 'FIXING', 'CANCELLED', 'DONE', 'BILLED', 'REWORK'],
-    required: true
+    enum: ['NEW', 'ASSIGNED', 'FIXING', 'DONE', 'REWORK'],
+    required: true,
+    default: 'NEW'
   },
+  billed: { type: Boolean, default: false },
   approved: { type: Boolean, default: false },
   credited: { type: Boolean, default: false },
   assignee: String,
   dateIn: { type: Date, default: Date.now },
   dateOut: Date,
-  deleted: { type: Boolean, default: false },
+  cancelled: { type: Boolean, default: false },
   createdBy: { type: String, required: true },
   modifiedBy: { type: String, required: true }
 }, { timestamps: true })
