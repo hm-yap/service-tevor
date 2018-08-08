@@ -4,7 +4,8 @@ import UserModel from '../models/UserModel'
 import logger from '../util/logger'
 import { nextId, delEmpObjValue } from '../util/common'
 // User module related constants
-let userCache = []
+const userCache = new Map()
+const certCache = new Map()
 const USRID = 'userid'
 const USRPFX = 'USR'
 const USRPAD = 4
@@ -14,19 +15,19 @@ const controller = {}
 
 export const findUserByCert = async (userCn) => {
   let user
-  logger.info(`Cached users: ${userCache.length}`)
+  logger.info(`Cached certs: ${certCache.size}`)
 
-  if (userCache.length > 0) {
-    user = userCache.find(user => (user.cert === userCn))
+  if (certCache.has(userCn) === true) {
+    user = certCache.get(userCn)
   }
 
   // If not found from cache
   if (user === undefined) {
-    logger.info('User not found from cache - fetch from DB...')
+    logger.info('Cert not found from cache - fetch from DB...')
     user = await UserModel.findOne({ cert: userCn, deleted: false }, EXCLUDE_FIELDS)
 
     if (user) {
-      userCache.push(user)
+      certCache.set(userCn, user)
     }
   }
 
@@ -35,10 +36,10 @@ export const findUserByCert = async (userCn) => {
 
 const findUserById = async (usrid, includeDelete = false) => {
   let user
-  logger.info(`Cached users: ${userCache.length}`)
+  logger.info(`Cached users: ${userCache.size}`)
 
-  if (userCache.length > 0) {
-    user = userCache.find(user => (user.userid === usrid))
+  if (userCache.has(usrid) === true) {
+    user = userCache.get(usrid)
   }
 
   // If not found from cache
@@ -54,7 +55,7 @@ const findUserById = async (usrid, includeDelete = false) => {
 
     // Not adding user to cache if deleted user are included in search
     if (user && includeDelete === false) {
-      userCache.push(user)
+      userCache.set(usrid, user)
     }
   }
 
@@ -79,10 +80,6 @@ export const getCreatedBySN = async (createdBy) => {
 export const getModifiedBySN = async (modifiedBy) => {
   const { shortname } = await findUserById(modifiedBy, true) || {}
   return shortname || 'NOTFOUND'
-}
-
-const removeFrmCache = (user) => {
-  return userCache.filter(usr => usr !== user)
 }
 
 /**
@@ -118,7 +115,6 @@ controller.getAll = async (req, res) => {
   try {
     const userArr = await UserModel.find({ deleted: false }, EXCLUDE_FIELDS).sort('userid')
     res.status(200).json({ result: userArr })
-    userCache = userArr
   } catch (err) {
     logger.error(`${USRPFX}.getAll: ${err}`)
     res.status(500).json({ error: 'Internal server error' })
@@ -165,9 +161,9 @@ controller.createUser = async (req, res) => {
       return res.status(400).json({ error: 'New user name, shortname or client certificate cannot be blank' })
     }
 
-    const newUserId = await nextId(USRID, USRPFX, USRPAD)
-    const newUser = new UserModel({
-      userid: newUserId,
+    const nextUserId = await nextId(USRID, USRPFX, USRPAD)
+    const createUser = new UserModel({
+      userid: nextUserId,
       name: inputName.toUpperCase(),
       shortname: inputShortname.toUpperCase(),
       roles: inputRoles,
@@ -175,8 +171,8 @@ controller.createUser = async (req, res) => {
       modifiedBy: curUsrId,
       createdBy: curUsrId
     })
-    const queryResult = await newUser.save()
-    const { name: newName, shortname: newShortname } = queryResult
+    const newUser = await createUser.save()
+    const { userid: newUserId, name: newName, shortname: newShortname } = newUser
 
     res.status(200).json({
       result: {
@@ -185,7 +181,6 @@ controller.createUser = async (req, res) => {
         shortname: newShortname
       }
     })
-    userCache.push(queryResult)
   } catch (err) {
     logger.error(`${USRPFX}.createUser: ${err}`)
     res.status(500).json({ error: 'Internal server error' })
@@ -207,14 +202,15 @@ controller.updateProfile = async (req, res) => {
       return res.status(400).json({ error: 'New shortname cannot be blank' })
     }
 
-    const queryResult = await UserModel.findOneAndUpdate(
+    const updatedUser = await UserModel.findOneAndUpdate(
       { userid: curUsrId },
       {
         shortname: inputShortname,
         modifiedBy: curUsrId
       }, { fields: EXCLUDE_FIELDS, new: true })
-    res.status(200).json(queryResult)
-    userCache = removeFrmCache(curUsr)
+    res.status(200).json(updatedUser)
+
+    userCache.set(curUsrId, updatedUser)
   } catch (err) {
     logger.error(`${USRPFX}.updateProfile: ${err}`)
     res.status(500).json({ error: 'Internal server error' })
@@ -242,7 +238,7 @@ controller.updateUser = async (req, res) => {
       return res.status(400).json({ error: 'New user name, shortname or client certificate cannot be blank' })
     }
 
-    const updateFields = {
+    const updates = {
       name: inputName,
       shortname: inputShortname,
       cert: inputCert,
@@ -250,11 +246,11 @@ controller.updateUser = async (req, res) => {
       modifiedBy: curUsrId
     }
 
-    const validUpdateFields = delEmpObjValue(updateFields)
+    const validUpdates = delEmpObjValue(updates)
 
     const updatedUser = await UserModel.findOneAndUpdate(
       { userid: updUsrId, deleted: false },
-      validUpdateFields,
+      validUpdates,
       { fields: EXCLUDE_FIELDS, new: true }
     )
 
@@ -262,7 +258,11 @@ controller.updateUser = async (req, res) => {
       res.status(404).json({ error: 'User not found' })
     } else {
       res.status(200).json({ result: updatedUser })
-      userCache = removeFrmCache(updatedUser)
+      userCache.set(updUsrId, updatedUser)
+
+      if (inputCert) {
+        certCache.delete(inputCert)
+      }
     }
   } catch (err) {
     logger.error(`${USRPFX}.updateUser: ${err}`)
@@ -277,11 +277,11 @@ controller.updateUser = async (req, res) => {
  */
 controller.deleteUser = async (req, res) => {
   try {
-    const updUsrId = req.params.id
+    const delUsrId = req.params.id
     const { user: { userid: curUsrId } } = res.locals
 
     const deletedUser = await UserModel.findOneAndUpdate(
-      { userid: updUsrId, deleted: false },
+      { userid: delUsrId, deleted: false },
       { deleted: true, modifiedBy: curUsrId },
       { fields: EXCLUDE_FIELDS, new: true }
     )
@@ -290,7 +290,9 @@ controller.deleteUser = async (req, res) => {
       res.status(404).json({ error: 'User not found' })
     } else {
       res.status(200).json({ result: deletedUser })
-      userCache = removeFrmCache(deletedUser)
+      userCache.delete(delUsrId)
+
+      certCache.delete(deletedUser.cert)
     }
   } catch (err) {
     logger.error(`${USRPFX}.deleteUser: ${err}`)
