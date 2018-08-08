@@ -4,13 +4,13 @@ import JobModel from '../models/JobModel'
 // Utils
 import logger from '../util/logger'
 import { nextId, delEmpValue } from '../util/common'
-import { isAdmin } from '../util/auth';
+import { isAdmin } from '../util/auth'
 // Job module related constants
 const JOB_MODULE = 'job'
 const JOBID = 'jobid'
 const JOBPFX = 'JOB'
 const JOBPAD = 8
-const EXCLUDE_FIELDS = '-deleted -_id -__v'
+const EXCLUDE_FIELDS = '-_id -__v'
 
 const controller = {}
 
@@ -35,7 +35,7 @@ controller.getAll = async (req, res) => {
       findQuery = Object.assign(findQuery, { assignee: curUsrId })
     }
 
-    const allJobs = await JobModel.find(findQuery)
+    const allJobs = await JobModel.find(findQuery).sort('jobid')
     res.status(200).json({ result: allJobs })
   } catch (err) {
     logger.error(`${JOBPFX}.getAll: ${err}`)
@@ -168,6 +168,42 @@ controller.addProblems = async (req, res) => {
    * 5. Generate unique problem id
    * 6. Structure response output with status codes (TBD)
    */
+  const { probDesc: inputProbDesc } = req.body
+
+  if (!inputProbDesc) {
+    res.status(204)
+  } else {
+    try {
+      const { user = {} } = res.locals
+      const { userid: curUsrId } = user
+      let findQuery = { jobid: req.params.id, cancelled: false }
+      const newProbid = `PRB-${generate()}`
+
+      if (isAdmin(user, JOB_MODULE) === false) {
+        findQuery = Object.assign(findQuery, { assignee: curUsrId })
+      }
+
+      const updates = {
+        $set: { modifiedBy: curUsrId },
+        $push: { problems: { probid: newProbid, probDesc: inputProbDesc } }
+      }
+
+      const updatedJob = await JobModel.findOneAndUpdate(
+        findQuery,
+        updates,
+        { fields: EXCLUDE_FIELDS, new: true }
+      )
+
+      if (!updatedJob) {
+        res.status(404).json({ error: 'Job not found' })
+      } else {
+        res.status(200).json({ result: updatedJob })
+      }
+    } catch (err) {
+      logger.error(`${JOBPFX}.addProblems: ${err}`)
+      res.status(500).json({ error: 'Internal server error' })
+    }
+  }
 }
 
 /**
@@ -187,6 +223,42 @@ controller.updateProblem = async (req, res) => {
    * 5. 'whitelist' the allowed fields from request payload. Take only whitelisted fields (TBD)
    * 6. Structure response output with status codes (TBD)
    */
+  const { probDesc: inputProbDesc } = req.body
+
+  if (!inputProbDesc) {
+    res.status(204)
+  } else {
+    try {
+      const { id: inputJobid, probid: inputProbid } = req.params
+      const { user = {} } = res.locals
+      const { userid: curUsrId } = user
+
+      let findQuery = { jobid: inputJobid, cancelled: false, 'problems.probid': inputProbid }
+
+      if (isAdmin(user, JOB_MODULE) === false) {
+        findQuery = Object.assign(findQuery, { assignee: curUsrId })
+      }
+
+      const updates = {
+        $set: { modifiedBy: curUsrId, 'problems.$.probDesc': inputProbDesc }
+      }
+
+      const updatedJob = await JobModel.findOneAndUpdate(
+        findQuery,
+        updates,
+        { fields: EXCLUDE_FIELDS, new: true }
+      )
+
+      if (!updatedJob) {
+        res.status(404).json({ error: 'Job not found' })
+      } else {
+        res.status(200).json({ result: updatedJob })
+      }
+    } catch (err) {
+      logger.error(`${JOBPFX}.updateProblem: ${err}`)
+      res.status(500).json({ error: 'Internal server error' })
+    }
+  }
 }
 
 /**
@@ -206,6 +278,37 @@ controller.deleteProblem = async (req, res) => {
    * 5. 'whitelist' the allowed fields from request payload. Take only whitelisted fields (TBD)
    * 6. Structure response output with status codes (TBD)
    */
+  try {
+    const { id: inputJobid, probid: inputProbid } = req.params
+    const { user = {} } = res.locals
+    const { userid: curUsrId } = user
+
+    let findQuery = { jobid: inputJobid, cancelled: false }
+
+    if (isAdmin(user, JOB_MODULE) === false) {
+      findQuery = Object.assign(findQuery, { assignee: curUsrId })
+    }
+
+    const updates = {
+      $set: { modifiedBy: curUsrId },
+      $pull: { probid: inputProbid }
+    }
+
+    const updatedJob = await JobModel.findOneAndUpdate(
+      findQuery,
+      updates,
+      { fields: EXCLUDE_FIELDS, new: true }
+    )
+
+    if (!updatedJob) {
+      res.status(404).json({ error: 'Job not found' })
+    } else {
+      res.status(200).json({ result: updatedJob })
+    }
+  } catch (err) {
+    logger.error(`${JOBPFX}.deleteProblem: ${err}`)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 }
 
 /**
