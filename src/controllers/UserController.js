@@ -259,7 +259,8 @@ controller.updateUser = async (req, res) => {
     } else {
       res.status(200).json({ result: updatedUser })
       userCache.set(updUsrId, updatedUser)
-
+      // Auth cache refresh after any user update
+      certCache.set(updatedUser.cert, updatedUser)
       if (inputCert) {
         certCache.delete(inputCert)
       }

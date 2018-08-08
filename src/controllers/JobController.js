@@ -3,7 +3,7 @@ import { generate } from 'shortid'
 import JobModel from '../models/JobModel'
 // Utils
 import logger from '../util/logger'
-import { nextId, delEmpValue } from '../util/common'
+import { nextId, delEmpObjValue } from '../util/common'
 import { isAdmin } from '../util/auth'
 // Job module related constants
 const JOB_MODULE = 'job'

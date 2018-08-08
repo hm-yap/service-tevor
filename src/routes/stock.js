@@ -1,4 +1,8 @@
 import { Router } from 'express'
+// Controllers
+import stockController from '../controllers/StockController'
+// Utils
+import { requireAdmin } from '../util/auth'
 
 const stockRouter = Router()
 
@@ -17,21 +21,18 @@ stockRouter.get('/:id', (req, res) => {
   })
 })
 
-stockRouter.post('/', (req, res) => {
-  res.json({
-    method: 'POST',
-    result: 'test'
-  })
+stockRouter.post('/', requireAdmin('stock'), (req, res) => {
+  stockController.addNewItem(req, res)
 })
 
-stockRouter.put('/:id', (req, res) => {
+stockRouter.put('/:id', requireAdmin('stock'), (req, res) => {
   res.json({
     method: 'PUT',
     result: `Putting ${req.params.id}`
   })
 })
 
-stockRouter.delete('/:id', (req, res) => {
+stockRouter.delete('/:id', requireAdmin('stock'), (req, res) => {
   res.json({
     method: 'DELETE',
     result: `Deleting ${req.params.id}`
