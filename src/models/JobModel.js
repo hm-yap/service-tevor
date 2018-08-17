@@ -51,7 +51,7 @@ const jobSchema = new Mongoose.Schema({
     default: 'NEW'
   },
   billed: { type: Boolean, default: false },
-  approved: { type: Boolean, default: false },
+  approved: { type: Boolean, default: null },
   credited: { type: Boolean, default: false },
   assignee: { type: String, uppercase: true },
   dateIn: { type: Date, default: Date.now },

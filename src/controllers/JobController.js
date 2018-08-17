@@ -6,9 +6,7 @@ import { findStockById } from './StockController'
 import { addNewRequest, cancelRequest } from './PRController'
 import logger from '../util/logger'
 import { nextId, delEmpObjValue } from '../util/common'
-import { isAdmin } from '../util/auth'
 // Job module related constants
-const JOB_MODULE = 'job'
 const JOBID = 'jobid'
 const JOBPFX = 'JOB'
 const JOBPAD = 6
@@ -29,14 +27,7 @@ controller.getAll = async (req, res) => {
     * 5. Paginated response (TBD)
     */
   try {
-    const { user = {} } = res.locals
-    const { userid: curUsrId } = user
-    let findQuery = {}
-
-    if (isAdmin(user, JOB_MODULE) === false) {
-      findQuery = Object.assign(findQuery, { $or: [{ assignee: curUsrId }, { assignee: '' }] })
-    }
-
+    const findQuery = {}
     const allJobs = await JobModel.find(findQuery, EXCLUDE_FIELDS).sort('jobid')
     res.status(200).json({ result: allJobs })
   } catch (err) {
@@ -58,14 +49,7 @@ controller.getOne = async (req, res) => {
     * 4. Structure response output with status codes (TBD)
     */
   try {
-    const { user = {} } = res.locals
-    const { userid: curUsrId } = user
-    let findQuery = { jobid: req.params.id }
-
-    if (isAdmin(user, JOB_MODULE) === false) {
-      findQuery = Object.assign(findQuery, { $or: [{ assignee: curUsrId }, { assignee: '' }] })
-    }
-
+    const findQuery = { jobid: req.params.id }
     const job = await JobModel.findOne(findQuery, EXCLUDE_FIELDS)
 
     if (!job) {
@@ -136,21 +120,8 @@ controller.createJob = async (req, res) => {
 }
 
 /**
- * PATCH /job/:id
- * Limited fields, non restricted to roles
- */
-controller.patchJob = async (req, res) => {
-  try {
-
-  } catch (err) {
-    logger.error(`${JOBPFX}.patchJob: ${err}`)
-    res.status(500).json({ error: 'Internal server error' })
-  }
-}
-
-/**
  * PUT /job/:id
- * Allows all field (except embedded fields), restricted to Admin only
+ * Method to update basic job details, such as jobno, imei
  */
 controller.updateJob = async (req, res) => {
   try {
@@ -158,6 +129,118 @@ controller.updateJob = async (req, res) => {
   } catch (err) {
     logger.error(`${JOBPFX}.updateJob: ${err}`)
     res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+/**
+ * PATCH /job/:id/status
+ * Update job status, certain status change is restricted to Admin only
+ */
+controller.updateJobStatus = async (req, res) => {
+  const { status: newStatus } = req.body
+  const statusList = ['NEW', 'ASSIGNED', 'FIXING', 'DONE', 'REWORK']
+
+  if (!newStatus || statusList.includes(newStatus.toUpperCase()) === false) {
+    res.status(204).json()
+  } else {
+    try {
+      const { user: { userid: curUsrId } } = res.locals
+      const findQuery = { jobid: req.params.id, cancelled: false }
+
+      const updates = {
+        modifiedBy: curUsrId,
+        status: newStatus.toUpperCase()
+      }
+
+      const updatedJob = await JobModel.findOneAndUpdate(
+        findQuery,
+        updates,
+        { fields: EXCLUDE_FIELDS, new: true }
+      )
+
+      if (!updatedJob) {
+        res.status(404).json({ error: 'Job not found' })
+      } else {
+        res.status(200).json({ result: updatedJob })
+      }
+    } catch (err) {
+      logger.error(`${JOBPFX}.updateJobStatus: ${err}`)
+      res.status(500).json({ error: 'Internal server error' })
+    }
+  }
+}
+
+/**
+ * PATCH /job/:id/assignee
+ * Update job assignee
+ */
+controller.updateJobAssignee = async (req, res) => {
+  const { assignee: newAssignee } = req.body
+
+  if (!newAssignee) {
+    res.status(204).json()
+  } else {
+    try {
+      const { user: { userid: curUsrId } } = res.locals
+      const findQuery = { jobid: req.params.id, cancelled: false }
+
+      const updates = {
+        modifiedBy: curUsrId,
+        assignee: newAssignee
+      }
+
+      const updatedJob = await JobModel.findOneAndUpdate(
+        findQuery,
+        updates,
+        { fields: EXCLUDE_FIELDS, new: true }
+      )
+
+      if (!updatedJob) {
+        res.status(404).json({ error: 'Job not found' })
+      } else {
+        res.status(200).json({ result: updatedJob })
+      }
+    } catch (err) {
+      logger.error(`${JOBPFX}.updateJobAssignee: ${err}`)
+      res.status(500).json({ error: 'Internal server error' })
+    }
+  }
+}
+
+/**
+ * PATCH /job/:id/approve
+ * Approve / reject job
+ */
+controller.approveJob = async (req, res) => {
+  const { approved: isApproved } = req.body
+
+  if (typeof isApproved !== 'boolean') {
+    res.status(204).json()
+  } else {
+    try {
+      const { user: { userid: curUsrId } } = res.locals
+      const findQuery = { jobid: req.params.id, cancelled: false, status: 'DONE' }
+
+      const updates = {
+        modifiedBy: curUsrId,
+        approved: isApproved
+      }
+
+      const updatedJob = await JobModel.findOneAndUpdate(
+        findQuery,
+        updates,
+        { fields: EXCLUDE_FIELDS, new: true }
+      )
+
+      if (!updatedJob) {
+        res.status(404).json({ error: 'Job not found' })
+      } else {
+        res.status(200).json({ result: updatedJob })
+      }
+    } catch (err) {
+      logger.error(`${JOBPFX}.approveJob: ${err}`)
+      res.status(500).json({ error: 'Internal server error' })
+    }
   }
 }
 
@@ -187,10 +270,6 @@ controller.addProblems = async (req, res) => {
       const { userid: curUsrId } = user
       let findQuery = { jobid: req.params.id, cancelled: false }
       const newProbid = `PRB-${generate()}`
-
-      if (isAdmin(user, JOB_MODULE) === false) {
-        findQuery = Object.assign(findQuery, { assignee: curUsrId })
-      }
 
       const updates = {
         $set: { modifiedBy: curUsrId },
@@ -244,10 +323,6 @@ controller.updateProblem = async (req, res) => {
 
       let findQuery = { jobid: inputJobid, cancelled: false, 'problems.probid': inputProbid }
 
-      if (isAdmin(user, JOB_MODULE) === false) {
-        findQuery = Object.assign(findQuery, { assignee: curUsrId })
-      }
-
       const updates = {
         $set: { modifiedBy: curUsrId, 'problems.$.probDesc': inputProbDesc }
       }
@@ -293,10 +368,6 @@ controller.deleteProblem = async (req, res) => {
     const { userid: curUsrId } = user
 
     let findQuery = { jobid: inputJobid, cancelled: false }
-
-    if (isAdmin(user, JOB_MODULE) === false) {
-      findQuery = Object.assign(findQuery, { assignee: curUsrId })
-    }
 
     const updates = {
       $set: { modifiedBy: curUsrId },
@@ -350,10 +421,6 @@ controller.addParts = async (req, res) => {
 
   if (inputStockid === '' || inputQty <= 0) {
     return res.status(400).json({ error: 'Stock ID cannot be empty and quantity cannot be less than 1' })
-  }
-
-  if (isAdmin(user, JOB_MODULE) === false) {
-    findQuery = Object.assign(findQuery, { assignee: curUsrId })
   }
 
   try {
@@ -428,11 +495,6 @@ controller.deletePart = async (req, res) => {
   const { user = {} } = res.locals
   const { userid: curUsrId } = user
   let findQuery = { jobid: inputJobid, parts: { partid: inputPartid }, cancelled: false }
-
-  if (isAdmin(user, JOB_MODULE) === false) {
-    // Checks whether job exists and whether job is assigned to user
-    findQuery = Object.assign(findQuery, { assignee: curUsrId })
-  }
 
   try {
     const assignedJob = await JobModel.findOne(findQuery)

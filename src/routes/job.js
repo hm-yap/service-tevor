@@ -1,5 +1,8 @@
 import { Router } from 'express'
+// Controllers
 import jobController from '../controllers/JobController'
+// Utils
+import { requireAdmin } from '../util/auth'
 
 const jobRouter = Router()
 
@@ -17,6 +20,18 @@ jobRouter.post('/', (req, res) => {
 
 jobRouter.put('/:id', (req, res) => {
   jobController.updateJob(req, res)
+})
+
+jobRouter.patch('/:id/status', (req, res) => {
+  jobController.updateJobStatus(req, res)
+})
+
+jobRouter.patch('/:id/assignee', (req, res) => {
+  jobController.updateJobAssignee(req, res)
+})
+
+jobRouter.patch('/:id/approve', requireAdmin('job'), (req, res) => {
+  jobController.updateJobAssignee(req, res)
 })
 
 jobRouter.post('/:id/problem', (req, res) => {
