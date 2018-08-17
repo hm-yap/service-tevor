@@ -28,7 +28,7 @@ userRouter.patch('/', (req, res) => {
  * GET /user/all
  * Retrieve all users
  */
-userRouter.get('/all', requireAdmin('user'), (req, res) => {
+userRouter.get('/all', (req, res) => {
   userController.getAll(req, res)
 })
 
@@ -36,7 +36,7 @@ userRouter.get('/all', requireAdmin('user'), (req, res) => {
  * GET /user/:id
  * Retrieve user with given id
  */
-userRouter.get('/:id', requireAdmin('user'), (req, res) => {
+userRouter.get('/:id', (req, res) => {
   userController.getOne(req, res)
 })
 

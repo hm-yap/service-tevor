@@ -3,7 +3,7 @@ import { generate } from 'shortid'
 import JobModel from '../models/JobModel'
 // Utils
 import { findStockById } from './StockController'
-import { addNewRequest } from './PRController'
+import { addNewRequest, cancelRequest } from './PRController'
 import logger from '../util/logger'
 import { nextId, delEmpObjValue } from '../util/common'
 import { isAdmin } from '../util/auth'
@@ -11,7 +11,7 @@ import { isAdmin } from '../util/auth'
 const JOB_MODULE = 'job'
 const JOBID = 'jobid'
 const JOBPFX = 'JOB'
-const JOBPAD = 8
+const JOBPAD = 6
 const EXCLUDE_FIELDS = '-_id -__v'
 
 const controller = {}
@@ -63,7 +63,7 @@ controller.getOne = async (req, res) => {
     let findQuery = { jobid: req.params.id }
 
     if (isAdmin(user, JOB_MODULE) === false) {
-      findQuery = Object.assign(findQuery, { assignee: curUsrId })
+      findQuery = Object.assign(findQuery, { $or: [{ assignee: curUsrId }, { assignee: '' }] })
     }
 
     const job = await JobModel.findOne(findQuery, EXCLUDE_FIELDS)
@@ -100,7 +100,7 @@ controller.createJob = async (req, res) => {
       jobno: inputJobno = '',
       brand: inputBrand = '',
       model: inputModel = '',
-      status: inputStatus = '',
+      status: inputStatus,
       assignee: inputAssignee = ''
     } = req.body
 
@@ -136,22 +136,29 @@ controller.createJob = async (req, res) => {
 }
 
 /**
+ * PATCH /job/:id
+ * Limited fields, non restricted to roles
+ */
+controller.patchJob = async (req, res) => {
+  try {
+
+  } catch (err) {
+    logger.error(`${JOBPFX}.patchJob: ${err}`)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+/**
  * PUT /job/:id
+ * Allows all field (except embedded fields), restricted to Admin only
  */
 controller.updateJob = async (req, res) => {
-  /**
-   * Update job logic stub
-   * 1. check caller id (TBD)
-   * 2. check user permission (TBD)
-   *    i.   job admin only - approved, assignee
-   *    ii.  user admin only - credited (TBD)
-   *    iii. other fields - job admin or assignee only
-   *    iv.  No permission - HTTP 403
-   * 3. check job ID
-   *    i. If not found - HTTP 404
-   * 4. 'whitelist' the allowed fields from request payload. Take only whitelisted fields (TBD)
-   * 5. Structure response output with status codes (TBD)
-   */
+  try {
+
+  } catch (err) {
+    logger.error(`${JOBPFX}.updateJob: ${err}`)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 }
 
 /**
@@ -173,7 +180,7 @@ controller.addProblems = async (req, res) => {
   const { probDesc: inputProbDesc } = req.body
 
   if (!inputProbDesc) {
-    res.status(204)
+    res.status(204).json()
   } else {
     try {
       const { user = {} } = res.locals
@@ -228,7 +235,7 @@ controller.updateProblem = async (req, res) => {
   const { probDesc: inputProbDesc } = req.body
 
   if (!inputProbDesc) {
-    res.status(204)
+    res.status(204).json()
   } else {
     try {
       const { id: inputJobid, probid: inputProbid } = req.params
@@ -346,21 +353,17 @@ controller.addParts = async (req, res) => {
   }
 
   if (isAdmin(user, JOB_MODULE) === false) {
-    try {
-      // Checks whether job exists and whether job is assigned to user
-      findQuery = Object.assign(findQuery, { assignee: curUsrId })
-      const assignedJob = await JobModel.findOne(findQuery)
-
-      if (!assignedJob) {
-        return res.status(403).json({ error: 'Only job admin or assignee can request for parts' })
-      }
-    } catch (err) {
-      logger.error(`${JOBPFX}.addParts: ${err}`)
-      res.status(500).json({ error: 'Internal server error' })
-    }
+    findQuery = Object.assign(findQuery, { assignee: curUsrId })
   }
 
   try {
+    // Checks whether job exists and whether job is assigned to user
+    const assignedJob = await JobModel.findOne(findQuery)
+
+    if (!assignedJob) {
+      return res.status(403).json({ error: 'Only job admin or assignee can request for parts' })
+    }
+
     const stock = findStockById(inputStockid)
 
     if (!stock) {
@@ -409,7 +412,7 @@ controller.deletePart = async (req, res) => {
    * 1. check caller id (TBD)
    * 2. check user permission (TBD)
    *    i.   restricted to assignee & job admin only
-   *    ii.  No permission - HTTP 401
+   *    ii.  No permission - HTTP 403
    * 3. check job ID
    *    i. If not found - HTTP 404
    * 4. check job part ID
@@ -421,6 +424,45 @@ controller.deletePart = async (req, res) => {
    * 7. Remove the part from parts array
    * 8. Structure response output with status codes (TBD)
    */
+  const { id: inputJobid, partid: inputPartid } = req.params
+  const { user = {} } = res.locals
+  const { userid: curUsrId } = user
+  let findQuery = { jobid: inputJobid, parts: { partid: inputPartid }, cancelled: false }
+
+  if (isAdmin(user, JOB_MODULE) === false) {
+    // Checks whether job exists and whether job is assigned to user
+    findQuery = Object.assign(findQuery, { assignee: curUsrId })
+  }
+
+  try {
+    const assignedJob = await JobModel.findOne(findQuery)
+
+    if (!assignedJob) {
+      return res.status(403).json({ error: 'Only job admin or assignee can cancel requested parts' })
+    }
+
+    const updates = {
+      $set: { modifiedBy: curUsrId },
+      $pull: { partid: inputPartid }
+    }
+
+    const updatedJob = await JobModel.findOneAndUpdate(
+      findQuery,
+      updates,
+      { fields: EXCLUDE_FIELDS, new: true }
+    )
+
+    if (!updatedJob) {
+      return res.status(404).json({ error: 'Job not found' })
+    } else {
+      // Cancel part request
+      await cancelRequest(curUsrId, inputJobid, inputPartid)
+      res.status(200).json({ result: updatedJob })
+    }
+  } catch (err) {
+    logger.error(`${JOBPFX}.deletePart: ${err}`)
+    res.status(500).json({ error: 'Internal server error' })
+  }
 }
 
 export default controller

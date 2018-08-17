@@ -53,6 +53,26 @@ export const addNewRequest = async (usrid = '', jobid = '', reqPart = {}) => {
   return newRequest
 }
 
+export const cancelRequest = async (usrid = '', jobid = '', partid = '') => {
+  let updatedRequest
+
+  if (usrid !== '' && jobid !== '' && partid !== '') {
+    const findQuery = {
+      jobid: jobid,
+      partid: partid,
+      closed: false
+    }
+
+    updatedRequest = await PartRequestModel.findOneAndUpdate(
+      findQuery,
+      { status: 'CANCELLED' },
+      { new: true, fields: EXCLUDE_FIELDS }
+    )
+  }
+
+  return updatedRequest
+}
+
 controller.getAll = async (req, res) => {
   try {
     const allRequests = await PartRequestModel

@@ -28,11 +28,11 @@ import Mongoose from 'mongoose'
 
 const jobSchema = new Mongoose.Schema({
   jobid: { type: String, unique: true, required: true },
-  client: { type: String, required: true },
-  imei: { type: String, default: '' },
-  jobno: { type: String, default: '' },
-  brand: { type: String, required: true },
-  model: { type: String, required: true },
+  client: { type: String, required: true, uppercase: true },
+  imei: { type: String, default: '', uppercase: true },
+  jobno: { type: String, default: '', uppercase: true },
+  brand: { type: String, required: true, uppercase: true },
+  model: { type: String, required: true, uppercase: true },
   parts: [{
     partid: String,
     stockid: String,
@@ -47,17 +47,18 @@ const jobSchema = new Mongoose.Schema({
     type: String,
     enum: ['NEW', 'ASSIGNED', 'FIXING', 'DONE', 'REWORK'],
     required: true,
+    uppercase: true,
     default: 'NEW'
   },
   billed: { type: Boolean, default: false },
   approved: { type: Boolean, default: false },
   credited: { type: Boolean, default: false },
-  assignee: String,
+  assignee: { type: String, uppercase: true },
   dateIn: { type: Date, default: Date.now },
   dateOut: Date,
   cancelled: { type: Boolean, default: false },
-  createdBy: { type: String, required: true },
-  modifiedBy: { type: String, required: true }
+  createdBy: { type: String, required: true, uppercase: true },
+  modifiedBy: { type: String, required: true, uppercase: true }
 }, { timestamps: true })
 
 const jobModel = Mongoose.model('Job', jobSchema)

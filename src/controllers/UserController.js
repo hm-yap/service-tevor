@@ -108,7 +108,6 @@ controller.getProfile = async (req, res) => {
 
 /**
  * GET /user/all
- * User Admin only
  * Returns list of users, sort by user id
  */
 controller.getAll = async (req, res) => {
@@ -123,7 +122,6 @@ controller.getAll = async (req, res) => {
 
 /**
  * GET /user/id
- * User Admin only
  * Returns details of user of a given id
  */
 controller.getOne = async (req, res) => {
