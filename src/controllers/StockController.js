@@ -2,7 +2,6 @@
 import StockModel from '../models/StockModel'
 // Utils
 import logger from '../util/logger'
-import { delEmpObjValue } from '../util/common'
 // Job module related constants
 const stockCache = new Map()
 const STKPFX = 'STK'
@@ -89,7 +88,7 @@ controller.addNewItem = async (req, res) => {
 
     res.status(200).json({
       result: {
-        userid: newStockid
+        stockid: newStockid
       }
     })
   } catch (err) {
@@ -97,3 +96,5 @@ controller.addNewItem = async (req, res) => {
     res.status(500).json({ error: err })
   }
 }
+
+export default controller

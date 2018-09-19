@@ -30,7 +30,6 @@ export const addNewRequest = async (usrid = '', jobid = '', reqPart = {}) => {
   if (usrid !== '' && jobid !== '' && reqPart !== {}) {
     const nextPrqid = `${PRQPFX}-${generate()}`
     const {
-      partid: inputPartid,
       stockid: inputStockid,
       stockDesc: inputStockDesc,
       qty: inputQty
@@ -39,7 +38,6 @@ export const addNewRequest = async (usrid = '', jobid = '', reqPart = {}) => {
     const createPrqRequest = new PartRequestModel({
       prqid: nextPrqid,
       jobid: jobid,
-      partid: inputPartid,
       stockid: inputStockid,
       stockDesc: inputStockDesc,
       reqQty: inputQty,
@@ -53,19 +51,27 @@ export const addNewRequest = async (usrid = '', jobid = '', reqPart = {}) => {
   return newRequest
 }
 
-export const cancelRequest = async (usrid = '', jobid = '', partid = '') => {
+export const cancelRequest = async (inUsrid = '', inJobid = '', inPrqid = '') => {
   let updatedRequest
 
-  if (usrid !== '' && jobid !== '' && partid !== '') {
+  if (inUsrid !== '' && inJobid !== '' && inPrqid !== '') {
     const findQuery = {
-      jobid: jobid,
-      partid: partid,
+      jobid: inJobid,
+      prqid: inPrqid,
       closed: false
+    }
+
+    const update = {
+      $set: {
+        modifiedBy: inUsrid,
+        status: 'CANCELLED',
+        closed: true
+      }
     }
 
     updatedRequest = await PartRequestModel.findOneAndUpdate(
       findQuery,
-      { status: 'CANCELLED' },
+      update,
       { new: true, fields: EXCLUDE_FIELDS }
     )
   }

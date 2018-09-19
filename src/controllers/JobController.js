@@ -5,7 +5,7 @@ import JobModel from '../models/JobModel'
 import { findStockById } from './StockController'
 import { addNewRequest, cancelRequest } from './PRController'
 import logger from '../util/logger'
-import { nextId, delEmpObjValue } from '../util/common'
+import { nextId } from '../util/common'
 // Job module related constants
 const JOBID = 'jobid'
 const JOBPFX = 'JOB'
@@ -371,7 +371,7 @@ controller.deleteProblem = async (req, res) => {
 
     const updates = {
       $set: { modifiedBy: curUsrId },
-      $pull: { probid: inputProbid }
+      $pull: { problems: { probid: inputProbid } }
     }
 
     const updatedJob = await JobModel.findOneAndUpdate(
@@ -431,7 +431,7 @@ controller.addParts = async (req, res) => {
       return res.status(403).json({ error: 'Only job admin or assignee can request for parts' })
     }
 
-    const stock = findStockById(inputStockid)
+    const stock = await findStockById(inputStockid)
 
     if (!stock) {
       return res.status(404).json({ error: 'Part not found' })
@@ -440,28 +440,32 @@ controller.addParts = async (req, res) => {
     const { stockDesc: inputStockDesc } = stock
 
     const reqPart = {
-      partid: `PRT-${generate()}`,
       stockid: inputStockid,
       stockDesc: inputStockDesc,
       qty: inputQty
     }
 
-    const updates = {
-      $set: { modifiedBy: curUsrId },
-      $push: { parts: reqPart }
-    }
+    // Adding new part request
+    const partReqRes = await addNewRequest(curUsrId, inputJobid, reqPart)
 
-    const updatedJob = await JobModel.findOneAndUpdate(
-      findQuery,
-      updates,
-      { fields: EXCLUDE_FIELDS, new: true }
-    )
-
-    if (!updatedJob) {
-      return res.status(404).json({ error: 'Job not found' })
+    if (!partReqRes) {
+      return res.status(404).json({ error: 'Error when adding new part request' })
     } else {
-      // Adding new request
-      await addNewRequest(curUsrId, inputJobid, reqPart)
+      const { prqid: newPRQID } = partReqRes
+      console.log('New part request:', partReqRes)
+      console.log('New PRQID:', newPRQID)
+
+      const updates = {
+        $set: { modifiedBy: curUsrId },
+        $push: { parts: { prqid: newPRQID } }
+      }
+
+      const updatedJob = await JobModel.findOneAndUpdate(
+        findQuery,
+        updates,
+        { fields: EXCLUDE_FIELDS, new: true }
+      )
+
       res.status(200).json({ result: updatedJob })
     }
   } catch (err) {
@@ -494,18 +498,12 @@ controller.deletePart = async (req, res) => {
   const { id: inputJobid, partid: inputPartid } = req.params
   const { user = {} } = res.locals
   const { userid: curUsrId } = user
-  let findQuery = { jobid: inputJobid, parts: { partid: inputPartid }, cancelled: false }
+  let findQuery = { jobid: inputJobid, cancelled: false, billed: false }
 
   try {
-    const assignedJob = await JobModel.findOne(findQuery)
-
-    if (!assignedJob) {
-      return res.status(403).json({ error: 'Only job admin or assignee can cancel requested parts' })
-    }
-
     const updates = {
       $set: { modifiedBy: curUsrId },
-      $pull: { partid: inputPartid }
+      $pull: { parts: { prqid: inputPartid } }
     }
 
     const updatedJob = await JobModel.findOneAndUpdate(

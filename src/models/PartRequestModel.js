@@ -6,7 +6,6 @@
  * {
  *   prqid: part request id, system generated unique id (short id, 10 char, PRQ-XXXXXXXXXX)
  *   jobid: request came from which jobid
- *   partid: part id from the job
  *   stockid: stock id of the requested stock
  *   poid: this request was fulfilled by which poid
  *   stockDesc: Long name of the part requested
@@ -24,7 +23,6 @@ import Mongoose from 'mongoose'
 const prqSchema = new Mongoose.Schema({
   prqid: { type: String, unique: true, required: true },
   jobid: { type: String, required: true },
-  partid: { type: String, required: true },
   stockid: { type: String, required: true },
   poid: { type: String, default: '' },
   stockDesc: { type: String, required: true },
