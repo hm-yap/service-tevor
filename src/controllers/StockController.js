@@ -26,7 +26,7 @@ export const findStockById = async (stkid, includeDelete = false) => {
       query = Object.assign(query, { deleted: false })
     }
 
-    stock = await StockModel.findOne(query, EXCLUDE_FIELDS)
+    stock = await StockModel.findOne(query, EXCLUDE_FIELDS).lean()
 
     // Not adding user to cache if deleted user are included in search
     if (stock && includeDelete === false) {
@@ -51,7 +51,7 @@ export const adjStockBal = async (usrid = '', stkid = '', adjQty = 0) => {
       { stockid: stkid },
       { $set: { modifiedBy: usrid }, $inc: { balQty: adjQty } },
       { fields: EXCLUDE_FIELDS, new: true }
-    )
+    ).lean()
 
     if (adjustedStock) {
       stockCache.set(stkid, adjustedStock)

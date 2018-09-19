@@ -5,10 +5,39 @@ import PartRequestModel from '../models/PartRequestModel'
 // Utils
 import logger from '../util/logger'
 // Job module related constants
+const partRequestCache = new Map()
 const PRQPFX = 'PRQ'
 const EXCLUDE_FIELDS = '-closed -_id -__v'
 
 const controller = {}
+
+export const findPartReqById = async (prqid, includeDelete = false) => {
+  let partRequest
+  logger.info(`Cached stocks: ${partRequestCache.size}`)
+
+  if (partRequestCache.has(prqid) === true) {
+    partRequest = partRequestCache.get(prqid)
+  }
+
+  // If not found from cache
+  if (!partRequest) {
+    logger.info('Part requests not found from cache - fetch from DB...')
+    let query = { prqid: prqid }
+
+    if (includeDelete === false) {
+      query = Object.assign(query, { closed: false })
+    }
+
+    partRequest = await PartRequestModel.findOne(query, EXCLUDE_FIELDS).lean()
+
+    // Not adding user to cache if deleted user are included in search
+    if (partRequest && includeDelete === false) {
+      partRequestCache.set(prqid, partRequest)
+    }
+  }
+
+  return partRequest
+}
 
 /**
  * Add a new part request from job
@@ -73,7 +102,7 @@ export const cancelRequest = async (inUsrid = '', inJobid = '', inPrqid = '') =>
       findQuery,
       update,
       { new: true, fields: EXCLUDE_FIELDS }
-    )
+    ).lean()
   }
 
   return updatedRequest

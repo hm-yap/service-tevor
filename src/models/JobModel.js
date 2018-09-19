@@ -36,9 +36,11 @@ const jobSchema = new Mongoose.Schema({
   brand: { type: String, required: true, uppercase: true },
   model: { type: String, required: true, uppercase: true },
   parts: [{
+    _id: false,
     prqid: String
   }],
   problems: [{
+    _id: false,
     probid: String,
     probDesc: String
   }],

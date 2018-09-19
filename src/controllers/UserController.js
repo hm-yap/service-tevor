@@ -24,7 +24,7 @@ export const findUserByCert = async (userCn) => {
   // If not found from cache
   if (user === undefined) {
     logger.info('Cert not found from cache - fetch from DB...')
-    user = await UserModel.findOne({ cert: userCn, deleted: false }, EXCLUDE_FIELDS)
+    user = await UserModel.findOne({ cert: userCn, deleted: false }, EXCLUDE_FIELDS).lean()
 
     if (user) {
       certCache.set(userCn, user)
@@ -51,7 +51,7 @@ const findUserById = async (usrid, includeDelete = false) => {
       query = Object.assign(query, { deleted: false })
     }
 
-    user = await UserModel.findOne(query, EXCLUDE_FIELDS)
+    user = await UserModel.findOne(query, EXCLUDE_FIELDS).lean()
 
     // Not adding user to cache if deleted user are included in search
     if (user && includeDelete === false) {
@@ -63,22 +63,12 @@ const findUserById = async (usrid, includeDelete = false) => {
 }
 
 /**
- * Get short name of user id of createdBy
- * @param {*} createdByID user id who initially created the record
+ * Get short name from user id
+ * @param {*} usrid user id who initially created the record
  * @returns nick name of the user, 'NOTFOUND' if user can no longer be found
  */
-export const getCreatedBySN = async (createdBy) => {
-  const { shortname } = await findUserById(createdBy, true) || {}
-  return shortname || 'NOTFOUND'
-}
-
-/**
- * Get short name of user id of modifiedBy
- * @param {*} modifiedByID user id who last modified the record
- * @returns nick name of the user, 'NOTFOUND' if user can no longer be found
- */
-export const getModifiedBySN = async (modifiedBy) => {
-  const { shortname } = await findUserById(modifiedBy, true) || {}
+export const getSNByUserId = async (usrid) => {
+  const { shortname } = await findUserById(usrid, true) || {}
   return shortname || 'NOTFOUND'
 }
 
@@ -94,8 +84,8 @@ controller.getProfile = async (req, res) => {
     const userObj = await findUserById(userid)
     const { createdBy, modifiedBy } = userObj
 
-    const creatorSN = await getCreatedBySN(createdBy)
-    const updaterSN = await getModifiedBySN(modifiedBy)
+    const creatorSN = await getSNByUserId(createdBy)
+    const updaterSN = await getSNByUserId(modifiedBy)
 
     const resultObj = Object.assign(userObj, { createdBy: creatorSN, modifiedBy: updaterSN })
 
@@ -112,7 +102,7 @@ controller.getProfile = async (req, res) => {
  */
 controller.getAll = async (req, res) => {
   try {
-    const userArr = await UserModel.find({ deleted: false }, EXCLUDE_FIELDS).sort('userid')
+    const userArr = await UserModel.find({ deleted: false }, EXCLUDE_FIELDS).sort('userid').lean()
     res.status(200).json({ result: userArr })
   } catch (err) {
     logger.error(`${USRPFX}.getAll: ${err}`)
@@ -205,7 +195,7 @@ controller.updateProfile = async (req, res) => {
       {
         shortname: inputShortname,
         modifiedBy: curUsrId
-      }, { fields: EXCLUDE_FIELDS, new: true })
+      }, { fields: EXCLUDE_FIELDS, new: true }).lean()
     res.status(200).json(updatedUser)
 
     userCache.set(curUsrId, updatedUser)
@@ -250,7 +240,7 @@ controller.updateUser = async (req, res) => {
       { userid: updUsrId, deleted: false },
       validUpdates,
       { fields: EXCLUDE_FIELDS, new: true }
-    )
+    ).lean()
 
     if (!updatedUser) {
       res.status(404).json({ error: 'User not found' })
@@ -283,7 +273,7 @@ controller.deleteUser = async (req, res) => {
       { userid: delUsrId, deleted: false },
       { deleted: true, modifiedBy: curUsrId },
       { fields: EXCLUDE_FIELDS, new: true }
-    )
+    ).lean()
 
     if (!deletedUser) {
       res.status(404).json({ error: 'User not found' })

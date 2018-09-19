@@ -3,7 +3,8 @@ import { generate } from 'shortid'
 import JobModel from '../models/JobModel'
 // Utils
 import { findStockById } from './StockController'
-import { addNewRequest, cancelRequest } from './PRController'
+import { addNewRequest, cancelRequest, findPartReqById } from './PRController'
+import { getSNByUserId } from './UserController'
 import logger from '../util/logger'
 import { nextId } from '../util/common'
 // Job module related constants
@@ -13,6 +14,52 @@ const JOBPAD = 6
 const EXCLUDE_FIELDS = '-_id -__v'
 
 const controller = {}
+
+/**
+ * Prepare job payload for before sending to response
+ */
+const prepJobRes = async (jobData = {}) => {
+  let jobPayload = {}
+
+  if (jobData) {
+    const { parts = [], createdBy, modifiedBy, assignee, ...jobFields } = jobData
+
+    // Seek shortname for user fields
+    const createdBySN = await getSNByUserId(createdBy)
+    const modifiedBySN = await getSNByUserId(modifiedBy)
+    const assigneeSN = await getSNByUserId(assignee)
+
+    // Fill in parts with part request details
+    const partRequests = await Promise.all(parts.map(async (part) => {
+      const { prqid = '' } = part
+      if (prqid) {
+        const foundPart = await findPartReqById(prqid)
+
+        if (foundPart) {
+          return {
+            prqid: foundPart.prqid,
+            stockid: foundPart.stockid,
+            stockDesc: foundPart.stockDesc,
+            reqQty: foundPart.reqQty,
+            status: foundPart.status
+          }
+        }
+      }
+    }))
+
+    jobPayload = Object.assign(
+      jobFields,
+      {
+        parts: partRequests,
+        createdBy: createdBySN,
+        modifiedBy: modifiedBySN,
+        assignee: assigneeSN
+      }
+    )
+  }
+
+  return jobPayload
+}
 
 /**
  * GET /job
@@ -28,8 +75,16 @@ controller.getAll = async (req, res) => {
     */
   try {
     const findQuery = {}
-    const allJobs = await JobModel.find(findQuery, EXCLUDE_FIELDS).sort('jobid')
-    res.status(200).json({ result: allJobs })
+    const allJobs = await JobModel.find(findQuery, EXCLUDE_FIELDS).sort('jobid').lean()
+
+    const allJobRes = await Promise.all(
+      allJobs.map(async (job) => {
+        const jobRes = await prepJobRes(job)
+        return jobRes
+      })
+    )
+
+    res.status(200).json({ result: allJobRes })
   } catch (err) {
     logger.error(`${JOBPFX}.getAll: ${err}`)
     res.status(500).json({ error: 'Internal server error' })
@@ -50,12 +105,13 @@ controller.getOne = async (req, res) => {
     */
   try {
     const findQuery = { jobid: req.params.id }
-    const job = await JobModel.findOne(findQuery, EXCLUDE_FIELDS)
+    const job = await JobModel.findOne(findQuery, EXCLUDE_FIELDS).lean()
 
     if (!job) {
       res.status(404).json({ error: 'Job not found' })
     } else {
-      res.status(200).json({ result: job })
+      const getOneRes = await prepJobRes(job)
+      res.status(200).json({ result: getOneRes })
     }
   } catch (err) {
     logger.error(`${JOBPFX}.getOne: ${err}`)
@@ -156,12 +212,13 @@ controller.updateJobStatus = async (req, res) => {
         findQuery,
         updates,
         { fields: EXCLUDE_FIELDS, new: true }
-      )
+      ).lean()
 
       if (!updatedJob) {
         res.status(404).json({ error: 'Job not found' })
       } else {
-        res.status(200).json({ result: updatedJob })
+        const updatedJobRes = await prepJobRes(updatedJob)
+        res.status(200).json({ result: updatedJobRes })
       }
     } catch (err) {
       logger.error(`${JOBPFX}.updateJobStatus: ${err}`)
@@ -193,12 +250,13 @@ controller.updateJobAssignee = async (req, res) => {
         findQuery,
         updates,
         { fields: EXCLUDE_FIELDS, new: true }
-      )
+      ).lean()
 
       if (!updatedJob) {
         res.status(404).json({ error: 'Job not found' })
       } else {
-        res.status(200).json({ result: updatedJob })
+        const updatedJobRes = await prepJobRes(updatedJob)
+        res.status(200).json({ result: updatedJobRes })
       }
     } catch (err) {
       logger.error(`${JOBPFX}.updateJobAssignee: ${err}`)
@@ -230,12 +288,13 @@ controller.approveJob = async (req, res) => {
         findQuery,
         updates,
         { fields: EXCLUDE_FIELDS, new: true }
-      )
+      ).lean()
 
       if (!updatedJob) {
         res.status(404).json({ error: 'Job not found' })
       } else {
-        res.status(200).json({ result: updatedJob })
+        const updatedJobRes = await prepJobRes(updatedJob)
+        res.status(200).json({ result: updatedJobRes })
       }
     } catch (err) {
       logger.error(`${JOBPFX}.approveJob: ${err}`)
@@ -280,12 +339,13 @@ controller.addProblems = async (req, res) => {
         findQuery,
         updates,
         { fields: EXCLUDE_FIELDS, new: true }
-      )
+      ).lean()
 
       if (!updatedJob) {
         res.status(404).json({ error: 'Job not found' })
       } else {
-        res.status(200).json({ result: updatedJob })
+        const updatedJobRes = await prepJobRes(updatedJob)
+        res.status(200).json({ result: updatedJobRes })
       }
     } catch (err) {
       logger.error(`${JOBPFX}.addProblems: ${err}`)
@@ -331,12 +391,13 @@ controller.updateProblem = async (req, res) => {
         findQuery,
         updates,
         { fields: EXCLUDE_FIELDS, new: true }
-      )
+      ).lean()
 
       if (!updatedJob) {
         res.status(404).json({ error: 'Job not found' })
       } else {
-        res.status(200).json({ result: updatedJob })
+        const updatedJobRes = await prepJobRes(updatedJob)
+        res.status(200).json({ result: updatedJobRes })
       }
     } catch (err) {
       logger.error(`${JOBPFX}.updateProblem: ${err}`)
@@ -378,12 +439,13 @@ controller.deleteProblem = async (req, res) => {
       findQuery,
       updates,
       { fields: EXCLUDE_FIELDS, new: true }
-    )
+    ).lean()
 
     if (!updatedJob) {
       res.status(404).json({ error: 'Job not found' })
     } else {
-      res.status(200).json({ result: updatedJob })
+      const updatedJobRes = await prepJobRes(updatedJob)
+      res.status(200).json({ result: updatedJobRes })
     }
   } catch (err) {
     logger.error(`${JOBPFX}.deleteProblem: ${err}`)
@@ -425,7 +487,7 @@ controller.addParts = async (req, res) => {
 
   try {
     // Checks whether job exists and whether job is assigned to user
-    const assignedJob = await JobModel.findOne(findQuery)
+    const assignedJob = await JobModel.findOne(findQuery).lean()
 
     if (!assignedJob) {
       return res.status(403).json({ error: 'Only job admin or assignee can request for parts' })
@@ -438,7 +500,6 @@ controller.addParts = async (req, res) => {
     }
 
     const { stockDesc: inputStockDesc } = stock
-
     const reqPart = {
       stockid: inputStockid,
       stockDesc: inputStockDesc,
@@ -452,9 +513,6 @@ controller.addParts = async (req, res) => {
       return res.status(404).json({ error: 'Error when adding new part request' })
     } else {
       const { prqid: newPRQID } = partReqRes
-      console.log('New part request:', partReqRes)
-      console.log('New PRQID:', newPRQID)
-
       const updates = {
         $set: { modifiedBy: curUsrId },
         $push: { parts: { prqid: newPRQID } }
@@ -464,9 +522,10 @@ controller.addParts = async (req, res) => {
         findQuery,
         updates,
         { fields: EXCLUDE_FIELDS, new: true }
-      )
+      ).lean()
 
-      res.status(200).json({ result: updatedJob })
+      const updatedJobRes = await prepJobRes(updatedJob)
+      res.status(200).json({ result: updatedJobRes })
     }
   } catch (err) {
     logger.error(`${JOBPFX}.addParts: ${err}`)
@@ -510,14 +569,15 @@ controller.deletePart = async (req, res) => {
       findQuery,
       updates,
       { fields: EXCLUDE_FIELDS, new: true }
-    )
+    ).lean()
 
     if (!updatedJob) {
       return res.status(404).json({ error: 'Job not found' })
     } else {
       // Cancel part request
       await cancelRequest(curUsrId, inputJobid, inputPartid)
-      res.status(200).json({ result: updatedJob })
+      const updatedJobRes = await prepJobRes(updatedJob)
+      res.status(200).json({ result: updatedJobRes })
     }
   } catch (err) {
     logger.error(`${JOBPFX}.deletePart: ${err}`)

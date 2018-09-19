@@ -20,7 +20,7 @@ export const next = async (id) => {
   const { nextSeq = 1 } = await seqModel.findOneAndUpdate(
     { seqid: id },
     { $inc: { nextSeq: 1 } },
-    { upsert: true, new: true }) || {}
+    { upsert: true, new: true }).lean() || {}
   return nextSeq
 }
 
