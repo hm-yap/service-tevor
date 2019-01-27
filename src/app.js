@@ -15,13 +15,17 @@ import supplier from './routes/supplier'
 import user from './routes/user'
 
 const app = express()
-const port = 3000
+const port = 8443
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  credentials: true
+}
 
 // Connect to DB
 connectToDb()
 
 // CORS middleware
-app.use(cors())
+app.use(cors(corsOptions))
 
 // JSON body parser middleware
 app.use(bodyParser.json())
